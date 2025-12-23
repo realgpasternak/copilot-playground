@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Copilot Org Dashboard</title>
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, #f1f5f9, #e2e8f0 45%, #e0f2fe 100%);
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --accent: #0ea5e9;
+      --accent-strong: #0284c7;
+      --border: #cbd5e1;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+      font-family: "Manrope", "Segoe UI Variable", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 32px 20px 64px;
+    }
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: -0.02em;
+    }
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .controls {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      align-items: end;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      background: #f8fafc;
+    }
+    input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    button {
+      height: 42px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+      color: white;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35);
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 6px;
+    }
+    .card .label { color: var(--muted); font-size: 13px; }
+    .card .value { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+    .mini { font-size: 12px; color: var(--muted); }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .repo {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 6px;
+    }
+    .repo h3 { margin: 0; font-size: 16px; }
+    .meta { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+    .status { font-size: 13px; color: var(--muted); }
+    .inline { display: inline-flex; align-items: center; gap: 6px; }
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .errors { color: #b91c1c; font-weight: 700; }
+    @media (max-width: 1024px) {
+      .list { grid-template-columns: 1fr !important; }
+      .list > div[style*="grid-column"] { grid-column: 1 !important; }
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 26px; }
+      .controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>GitHub Copilot Org Metrics</h1>
+      <p class="lead">Uses the Copilot usage metrics REST endpoints (Accept: application/vnd.github+json, X-GitHub-Api-Version: 2022-11-28). Requires org-level Copilot metrics permission or classic PAT with read:org / manage_billing:copilot where applicable.</p>
+    </header>
+
+    <div class="panel">
+      <div class="controls">
+        <label>Org
+          <input id="org" value="brightsource-il" autocomplete="off" />
+        </label>
+        <label>Token (never stored)
+          <input id="token" type="password" autocomplete="off" placeholder="ghp_..." autofocus />
+        </label>
+        <label>Window
+          <select id="window" style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc;">
+            <option value="latest-28">Latest 28-day</option>
+            <option value="day">Specific day (1-day)</option>
+          </select>
+        </label>
+        <label>Day (YYYY-MM-DD)
+          <input id="day" placeholder="2025-07-01" autocomplete="off" />
+        </label>
+        <button id="load">Load metrics</button>
+      </div>
+      <p class="mini status" id="status">Idle</p>
+    </div>
+
+    <div class="grid stats" id="stats">
+      <div class="card"><div class="label">Avg Daily Users</div><div class="value" id="avgDailyUsers">–</div><div class="mini">Average per day</div></div>
+      <div class="card"><div class="label">Max Daily Users</div><div class="value" id="maxDailyUsers">–</div><div class="mini" id="maxDailyUsersDate">Peak single day</div></div>
+      <div class="card"><div class="label">Avg Interactions/User</div><div class="value" id="avgInteractionsPerUser">–</div><div class="mini">Average per user</div></div>
+      <div class="card"><div class="label">Max Interactions/User</div><div class="value" id="maxInteractionsPerUser">–</div><div class="mini" id="maxInteractionsUser">Peak single user</div></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 8px 0;font-size:18px;">Feature Adoption & Acceptance</h2>
+      <p class="mini" style="margin:0 0 12px 0; color:var(--muted);">Adoption and acceptance rates broken down by specific Copilot features. <strong>Code Completions</strong> are inline suggestions. <strong>Chat Modes</strong> (Ask, Edit) measure interactive features. <strong>Agent</strong> tracks autonomous code modifications. <strong>Requests</strong> = user-initiated prompts, <strong>Generations</strong> = distinct output events, <strong>Acceptances</strong> = code blocks accepted.</p>
+      
+      <div style="margin-bottom:16px;">
+        <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:8px;">Code Completions (Inline)</div>
+        <div class="grid stats">
+          <div class="card"><div class="label">Generations</div><div class="value" id="completionGen">–</div><div class="mini">Inline suggestions shown</div></div>
+          <div class="card"><div class="label">Accepted</div><div class="value" id="completionAcc">–</div><div class="mini">User accepted</div></div>
+          <div class="card"><div class="label">Acceptance Rate</div><div class="value" id="completionRate">–</div><div class="mini">% of generations</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:8px;">Chat — Ask Mode</div>
+        <div class="grid stats">
+          <div class="card"><div class="label">Requests</div><div class="value" id="chatAskRequests">–</div><div class="mini">Prompts sent</div></div>
+          <div class="card"><div class="label">Generations</div><div class="value" id="chatAskGenerations">–</div><div class="mini">Output events</div></div>
+          <div class="card"><div class="label">Acceptances</div><div class="value" id="chatAskAcceptances">–</div><div class="mini">Applied results</div></div>
+          <div class="card"><div class="label">Acceptance Rate</div><div class="value" id="chatAskRate">–</div><div class="mini">% of generations</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:8px;">Chat — Edit Mode</div>
+        <div class="grid stats">
+          <div class="card"><div class="label">Requests</div><div class="value" id="chatEditRequests">–</div><div class="mini">Prompts sent</div></div>
+          <div class="card"><div class="label">Generations</div><div class="value" id="chatEditGenerations">–</div><div class="mini">Output events</div></div>
+          <div class="card"><div class="label">Acceptances</div><div class="value" id="chatEditAcceptances">–</div><div class="mini">Applied edits</div></div>
+          <div class="card"><div class="label">Acceptance Rate</div><div class="value" id="chatEditRate">–</div><div class="mini">% of generations</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:8px;">Chat — Agent Mode</div>
+        <div class="grid stats">
+          <div class="card"><div class="label">Invocations</div><div class="value" id="agentInvocations">–</div><div class="mini">Times triggered</div></div>
+          <div class="card"><div class="label">Actions Proposed</div><div class="value" id="agentProposed">–</div><div class="mini">Suggested changes</div></div>
+          <div class="card"><div class="label">Actions Applied</div><div class="value" id="agentApplied">–</div><div class="mini">User accepted</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:8px;">Agent Mode (Autonomous Edits)</div>
+        <div class="grid stats">
+          <div class="card"><div class="label">Actions Proposed</div><div class="value" id="agentAutoProposed">–</div><div class="mini">Autonomous changes</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 8px 0;font-size:18px;">Code Productivity (Lines of Code)</h2>
+      <p class="mini" style="margin:0 0 12px 0; color:var(--muted);"><strong>Added</strong> = lines actually integrated into code (all sources including agent). <strong>Deleted</strong> = lines removed from code (agent edits only). <strong>Net Impact</strong> = Added - Deleted, showing overall code velocity.</p>
+      <div class="grid stats">
+        <div class="card"><div class="label">LoC Added</div><div class="value" id="locAdded">–</div><div class="mini">All lines integrated</div></div>
+        <div class="card"><div class="label">LoC Deleted</div><div class="value" id="locDeleted">–</div><div class="mini">Agent removed</div></div>
+        <div class="card"><div class="label">Net Impact</div><div class="value" id="locNetImpact">–</div><div class="mini">Added - deleted</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="inline" style="justify-content: space-between; width: 100%;">
+        <h2 style="margin:0;font-size:18px;">Report window</h2>
+        <span class="pill" id="orgName">github-copilot</span>
+      </div>
+      <div class="list" id="windowInfo">
+        <div class="mini" id="range">Not loaded</div>
+        <div class="mini" id="downloads">No download links yet</div>
+        <div class="mini" id="userDownloads">User report: Not loaded</div>
+        <div class="mini" id="userSummary">User report details pending</div>
+      </div>
+      <div class="mini" style="margin-top:8px;">
+        <button id="uploadToggle" style="height:auto;padding:8px 10px;min-height:36px;">Manual upload (JSON / NDJSON)</button>
+      </div>
+      <div id="uploadPanel" style="display:none; border:1px dashed var(--border); border-radius:10px; padding:10px; margin-top:8px; background:#f8fafc;">
+        <p class="mini" style="margin:0 0 8px 0; color:var(--muted);">Use this if the proxy fails. Drop the raw report files you downloaded from the links above.</p>
+        <div class="controls" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <label>Org report file
+            <input type="file" id="orgFile" accept=".json,.ndjson,.txt" />
+          </label>
+          <label>User report file (optional)
+            <input type="file" id="userFile" accept=".json,.ndjson,.txt" />
+          </label>
+          <div style="display:flex; align-items:end;">
+            <button id="loadUploads" type="button">Load uploaded files</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="inline" style="justify-content: space-between; width: 100%;">
+        <h2 style="margin:0;font-size:18px;">User highlights</h2>
+        <span class="pill">users</span>
+      </div>
+      <div class="list" style="grid-template-columns: repeat(2, 1fr); display: grid; gap: 12px;">
+        <div>
+          <div class="label" id="userChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Users (suggestions)</div>
+          <canvas id="userChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" id="userCompletionChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Code Completions</div>
+          <canvas id="userCompletionChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" id="userChatAskChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Chat — Ask Mode</div>
+          <canvas id="userChatAskChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" id="userChatEditChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Chat — Edit Mode</div>
+          <canvas id="userChatEditChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" id="userAgentChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Chat — Agent Mode</div>
+          <canvas id="userAgentChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" id="userAgentAutoChartLabel" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Agent Autonomous Edits</div>
+          <canvas id="userAgentAutoChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 8px 0;font-size:18px;">Usage distribution</h2>
+      <div class="list" style="grid-template-columns: repeat(2, 1fr); display: grid; gap: 16px;">
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Languages</div>
+          <canvas id="langChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">IDEs</div>
+          <canvas id="ideChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Features</div>
+          <canvas id="featureChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Models</div>
+          <canvas id="modelChart" height="220"></canvas>
+        </div>
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Daily Active Users</div>
+          <canvas id="dailyActiveChart" height="160"></canvas>
+        </div>
+        <div>
+          <div class="label" style="font-weight:700;color:var(--ink); margin-bottom:6px;">Agent Autonomous Edits — Proposed by Day</div>
+          <canvas id="agentAutoChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="inline" style="justify-content: space-between; width: 100%;">
+        <h2 style="margin:0;font-size:18px;">Seats without usage</h2>
+        <span class="pill">inactive</span>
+      </div>
+      <p class="mini" style="margin:8px 0; color:var(--muted);">Users with Copilot seats assigned but no activity in the report timeframe. This suggests potential underutilization.</p>
+      <div class="mini" style="margin:12px 0;" id="inactiveUsersStatus">Load data from API to see inactive users</div>
+      <div id="inactiveUsersList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 8px 0;font-size:18px;">Raw summary</h2>
+      <details>
+        <summary class="mini" style="cursor:pointer; user-select:none;">Toggle raw JSON</summary>
+        <pre class="mini" id="raw" style="white-space: pre-wrap; margin-top:8px;">Not loaded</pre>
+      </details>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 8px 0;font-size:18px;">Errors</h2>
+      <div class="errors" id="errors">None</div>
+    </div>
+  </div>
+
+  <script>
+    // Chart.js for pie charts
+    const chartScript = document.createElement('script');
+    chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    document.head.appendChild(chartScript);
+    const chartReady = new Promise((resolve, reject) => {
+      chartScript.onload = () => resolve();
+      chartScript.onerror = () => reject(new Error('Chart.js failed to load'));
+    });
+
+    const statusEl = document.getElementById('status');
+    const errorsEl = document.getElementById('errors');
+    const downloadsEl = document.getElementById('downloads');
+    const rangeEl = document.getElementById('range');
+    const langChartEl = document.getElementById('langChart');
+    const ideChartEl = document.getElementById('ideChart');
+    const featureChartEl = document.getElementById('featureChart');
+    const modelChartEl = document.getElementById('modelChart');
+    const userChartEl = document.getElementById('userChart');
+    const userCompletionChartEl = document.getElementById('userCompletionChart');
+    const userChatAskChartEl = document.getElementById('userChatAskChart');
+    const userChatEditChartEl = document.getElementById('userChatEditChart');
+    const userAgentChartEl = document.getElementById('userAgentChart');
+    const userAgentAutoChartEl = document.getElementById('userAgentAutoChart');
+    const userChartLabel = document.getElementById('userChartLabel');
+    const userCompletionChartLabel = document.getElementById('userCompletionChartLabel');
+    const userChatAskChartLabel = document.getElementById('userChatAskChartLabel');
+    const userChatEditChartLabel = document.getElementById('userChatEditChartLabel');
+    const userAgentChartLabel = document.getElementById('userAgentChartLabel');
+    const userAgentAutoChartLabel = document.getElementById('userAgentAutoChartLabel');
+    const completionSugEl = document.getElementById('completionGen');
+    const completionAccEl = document.getElementById('completionAcc');
+    const completionRateEl = document.getElementById('completionRate');
+    const chatAskRequestsEl = document.getElementById('chatAskRequests');
+    const chatAskGenerationsEl = document.getElementById('chatAskGenerations');
+    const chatAskAcceptancesEl = document.getElementById('chatAskAcceptances');
+    const chatAskRateEl = document.getElementById('chatAskRate');
+    const chatEditRequestsEl = document.getElementById('chatEditRequests');
+    const chatEditGenerationsEl = document.getElementById('chatEditGenerations');
+    const chatEditAcceptancesEl = document.getElementById('chatEditAcceptances');
+    const chatEditRateEl = document.getElementById('chatEditRate');
+    const agentInvocationsEl = document.getElementById('agentInvocations');
+    const agentProposedEl = document.getElementById('agentProposed');
+    const agentAppliedEl = document.getElementById('agentApplied');
+    const agentAdoptionRateEl = document.getElementById('agentAdoptionRate');
+    const agentAutoProposedEl = document.getElementById('agentAutoProposed');
+    const agentAutoAppliedEl = document.getElementById('agentAutoApplied');
+    const agentAutoAdoptionRateEl = document.getElementById('agentAutoAdoptionRate');
+    const locAddedEl = document.getElementById('locAdded');
+    const locDeletedEl = document.getElementById('locDeleted');
+    const locNetImpactEl = document.getElementById('locNetImpact');
+    const avgDailyUsersEl = document.getElementById('avgDailyUsers');
+    const maxDailyUsersEl = document.getElementById('maxDailyUsers');
+    const maxDailyUsersDateEl = document.getElementById('maxDailyUsersDate');
+    const avgInteractionsPerUserEl = document.getElementById('avgInteractionsPerUser');
+    const maxInteractionsPerUserEl = document.getElementById('maxInteractionsPerUser');
+    const maxInteractionsUserEl = document.getElementById('maxInteractionsUser');
+    const userDownloadsEl = document.getElementById('userDownloads');
+    const userSummaryEl = document.getElementById('userSummary');
+    const userCountEl = document.getElementById('userCount');
+    const userInteractionsEl = document.getElementById('userInteractions');
+    const userSuggestionsEl = document.getElementById('userSuggestions');
+    const userAcceptancesEl = document.getElementById('userAcceptances');
+    const userAcceptanceRateEl = document.getElementById('userAcceptanceRate');
+    const userCompletionSugEl = document.getElementById('userCompletionSug');
+    const userCompletionAccEl = document.getElementById('userCompletionAcc');
+    const userCompletionRateEl = document.getElementById('userCompletionRate');
+    const userOtherSugEl = document.getElementById('userOtherSug');
+    const userOtherAccEl = document.getElementById('userOtherAcc');
+    const userOtherRateEl = document.getElementById('userOtherRate');
+    const rawEl = document.getElementById('raw');
+    const dailyActiveChartEl = document.getElementById('dailyActiveChart');
+    const agentAutoChartEl = document.getElementById('agentAutoChart');
+    const uploadToggleEl = document.getElementById('uploadToggle');
+    const uploadPanelEl = document.getElementById('uploadPanel');
+    const orgFileEl = document.getElementById('orgFile');
+    const userFileEl = document.getElementById('userFile');
+    const loadUploadsEl = document.getElementById('loadUploads');
+
+    const headersFor = (token) => ({
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    });
+
+    const safeFetch = async (url, token, note) => {
+      const res = await fetch(url, { headers: headersFor(token) });
+      if (!res.ok) throw new Error(`${note} failed (${res.status})`);
+      const data = await res.json();
+      return { data, headers: res.headers };
+    };
+
+    const setStatus = (msg) => statusEl.textContent = msg;
+    const setError = (msg) => errorsEl.textContent = msg || 'None';
+
+    const fmtNum = (n) => n?.toLocaleString('en-US');
+
+    const fetchOrgReportMeta = (org, token, windowMode, day) => {
+      const base = `https://api.github.com/orgs/${org}/copilot/metrics/reports`;
+      let url = `${base}/organization-28-day/latest`;
+      if (windowMode === 'day') {
+        const params = new URLSearchParams();
+        if (day) params.set('day', day);
+        url = `${base}/organization-1-day?${params.toString()}`;
+      }
+      return safeFetch(url, token, 'Copilot org metrics');
+    };
+
+    const fetchUsersReportMeta = (org, token, windowMode, day) => {
+      const base = `https://api.github.com/orgs/${org}/copilot/metrics/reports`;
+      let url = `${base}/users-28-day/latest`;
+      if (windowMode === 'day') {
+        const params = new URLSearchParams();
+        if (day) params.set('day', day);
+        url = `${base}/users-1-day?${params.toString()}`;
+      }
+      return safeFetch(url, token, 'Copilot org users metrics');
+    };
+
+    const fetchSeatsWithPagination = async (org, token) => {
+      const seats = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const url = `https://api.github.com/orgs/${org}/copilot/billing/seats?page=${page}&per_page=100`;
+        try {
+          const { data } = await safeFetch(url, token, 'Copilot org seats');
+          if (data.seats && data.seats.length > 0) {
+            seats.push(...data.seats);
+            page++;
+            hasMore = data.seats.length === 100;
+          } else {
+            hasMore = false;
+          }
+        } catch (err) {
+          setError(`Failed to fetch seats: ${err.message}`);
+          hasMore = false;
+        }
+      }
+      return seats;
+    };
+
+    const fetchReportPayload = async (url) => {
+      const proxied = `/proxy?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxied);
+      if (!res.ok) throw new Error(`Report download failed (${res.status})`);
+      const textRaw = await res.text();
+      const text = textRaw.replace(/^\uFEFF/, '');
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        const lines = text.trim().split(/\r?\n/).filter(Boolean);
+        return lines.map((line) => JSON.parse(line.replace(/^\uFEFF/, '')));
+      }
+    };
+
+    const pickNumber = (obj, keys) => keys.map(k => obj?.[k]).find(v => typeof v === 'number');
+
+    const parseReportText = (textRaw) => {
+      const text = textRaw.replace(/^\uFEFF/, '');
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        const lines = text.trim().split(/\r?\n/).filter(Boolean);
+        return lines.map((line) => JSON.parse(line.replace(/^\uFEFF/, '')));
+      }
+    };
+
+    const aggregate = (report) => {
+      const days = report?.day_totals || [];
+      const totals = {
+        suggestions: 0,
+        acceptances: 0,
+        interactions: 0,
+        dailyActiveMax: 0,
+        dailyActiveAvg: 0,
+        languages: new Map(),
+        ides: new Map(),
+        features: new Map(),
+        models: new Map(),
+        completion: { requests: 0, generations: 0, acceptances: 0 },
+        chat_ask: { requests: 0, generations: 0, acceptances: 0 },
+        chat_edit: { requests: 0, generations: 0, acceptances: 0 },
+        agent: { requests: 0, generations: 0, acceptances: 0 },
+        agent_auto: { requests: 0, generations: 0, acceptances: 0 },
+        other: { requests: 0, generations: 0, acceptances: 0 },
+        loc: { suggestedAdd: 0, suggestedDel: 0, added: 0, deleted: 0 },
+        dayCount: days.length
+      };
+
+      for (const d of days) {
+        totals.suggestions += d.code_generation_activity_count || 0;
+        totals.acceptances += d.code_acceptance_activity_count || 0;
+        totals.interactions += d.user_initiated_interaction_count || 0;
+        totals.dailyActiveMax = Math.max(totals.dailyActiveMax, d.daily_active_users || 0);
+        totals.dailyActiveAvg += d.daily_active_users || 0;
+        totals.loc.suggestedAdd += d.loc_suggested_to_add_sum || 0;
+        totals.loc.suggestedDel += d.loc_suggested_to_delete_sum || 0;
+        totals.loc.added += d.loc_added_sum || 0;
+        totals.loc.deleted += d.loc_deleted_sum || 0;
+
+        (d.totals_by_language_feature || []).forEach(item => {
+          const key = item.language || 'unknown';
+          const prev = totals.languages.get(key) || { suggestions: 0, acceptances: 0 };
+          prev.suggestions += item.code_generation_activity_count || 0;
+          prev.acceptances += item.code_acceptance_activity_count || 0;
+          totals.languages.set(key, prev);
+        });
+
+        (d.totals_by_ide || []).forEach(item => {
+          const key = item.ide || 'unknown';
+          const prev = totals.ides.get(key) || { suggestions: 0, acceptances: 0 };
+          prev.suggestions += item.code_generation_activity_count || 0;
+          prev.acceptances += item.code_acceptance_activity_count || 0;
+          totals.ides.set(key, prev);
+        });
+
+        (d.totals_by_feature || []).forEach(item => {
+          const key = item.feature || 'unknown';
+          console.log('Feature:', key, 'Requests:', item.user_initiated_interaction_count, 'Generations:', item.code_generation_activity_count, 'Acceptances:', item.code_acceptance_activity_count);
+          const prev = totals.features.get(key) || { suggestions: 0, acceptances: 0 };
+          prev.suggestions += item.code_generation_activity_count || 0;
+          prev.acceptances += item.code_acceptance_activity_count || 0;
+          totals.features.set(key, prev);
+
+          // Map features to specific buckets
+          let bucket;
+          if (key === 'code_completion') {
+            bucket = totals.completion;
+          } else if (key === 'chat_panel_ask_mode' || key === 'chat_ask' || key === 'ask') {
+            bucket = totals.chat_ask;
+          } else if (key === 'chat_panel_edit_mode' || key === 'chat_edit' || key === 'edit') {
+            bucket = totals.chat_edit;
+          } else if (key === 'chat_panel_agent_mode' || key === 'agent') {
+            bucket = totals.agent;
+          } else if (key === 'agent_edit') {
+            bucket = totals.agent_auto;
+          } else {
+            bucket = totals.other;
+          }
+          bucket.requests += item.user_initiated_interaction_count || 0;
+          bucket.generations += item.code_generation_activity_count || 0;
+          bucket.acceptances += item.code_acceptance_activity_count || 0;
+        });
+
+        (d.totals_by_model_feature || []).forEach(item => {
+          console.log('Model+Feature:', item.model, '+', item.feature, '=', item.code_generation_activity_count);
+          const key = item.model || 'unknown';
+          const prev = totals.models.get(key) || { suggestions: 0, acceptances: 0 };
+          prev.suggestions += item.code_generation_activity_count || 0;
+          prev.acceptances += item.code_acceptance_activity_count || 0;
+          totals.models.set(key, prev);
+        });
+      }
+
+      if (totals.dayCount > 0) totals.dailyActiveAvg = totals.dailyActiveAvg / totals.dayCount;
+      return totals;
+    };
+
+    const topEntries = (map, limit = 5) => {
+      return Array.from(map.entries())
+        .map(([name, vals]) => ({ name, ...vals }))
+        .sort((a, b) => (b.suggestions || 0) - (a.suggestions || 0))
+        .slice(0, limit);
+    };
+
+    const normalizeUserRecords = (payload) => {
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.users)) return payload.users;
+      return [];
+    };
+
+    const summarizeUsers = (records) => {
+      const users = new Map();
+      for (const rec of records) {
+        const login = rec.user_login || `id:${rec.user_id || 'unknown'}`;
+        const curr = users.get(login) || { login, suggestions: 0, acceptances: 0, interactions: 0, agent: false, chat: false };
+        curr.suggestions += rec.code_generation_activity_count || 0;
+        curr.acceptances += rec.code_acceptance_activity_count || 0;
+        curr.interactions += rec.user_initiated_interaction_count || 0;
+        curr.agent = curr.agent || Boolean(rec.used_agent);
+        curr.chat = curr.chat || Boolean(rec.used_chat);
+        if (Array.isArray(rec.totals_by_feature)) {
+          rec.totals_by_feature.forEach((f) => {
+            const feature = f.feature || 'unknown';
+            let bucket;
+            if (feature === 'code_completion') {
+              bucket = curr.completion || (curr.completion = { requests: 0, generations: 0, acceptances: 0 });
+            } else if (feature === 'chat_panel_ask_mode' || feature === 'chat_ask' || feature === 'ask') {
+              bucket = curr.chat_ask || (curr.chat_ask = { requests: 0, generations: 0, acceptances: 0 });
+            } else if (feature === 'chat_panel_edit_mode' || feature === 'chat_edit' || feature === 'edit') {
+              bucket = curr.chat_edit || (curr.chat_edit = { requests: 0, generations: 0, acceptances: 0 });
+            } else if (feature === 'chat_panel_agent_mode' || feature === 'agent') {
+              bucket = curr.agent_mode || (curr.agent_mode = { requests: 0, generations: 0, acceptances: 0 });
+            } else if (feature === 'agent_edit') {
+              bucket = curr.agent_auto || (curr.agent_auto = { requests: 0, generations: 0, acceptances: 0 });
+            } else {
+              bucket = curr.other || (curr.other = { requests: 0, generations: 0, acceptances: 0 });
+            }
+            bucket.requests += f.user_initiated_interaction_count || 0;
+            bucket.generations += f.code_generation_activity_count || 0;
+            bucket.acceptances += f.code_acceptance_activity_count || 0;
+          });
+        }
+        users.set(login, curr);
+      }
+
+      const totals = { users: users.size, interactions: 0, suggestions: 0, acceptances: 0, completion: { requests: 0, generations: 0, acceptances: 0 }, chat_ask: { requests: 0, generations: 0, acceptances: 0 }, chat_edit: { requests: 0, generations: 0, acceptances: 0 }, agent: { requests: 0, generations: 0, acceptances: 0 }, agent_auto: { requests: 0, generations: 0, acceptances: 0 }, other: { requests: 0, generations: 0, acceptances: 0 } };
+      users.forEach((u) => {
+        totals.interactions += u.interactions;
+        totals.suggestions += u.suggestions;
+        totals.acceptances += u.acceptances;
+        if (u.completion) {
+          totals.completion.requests += u.completion.requests || 0;
+          totals.completion.generations += u.completion.generations || 0;
+          totals.completion.acceptances += u.completion.acceptances || 0;
+        }
+        if (u.chat_ask) {
+          totals.chat_ask.requests += u.chat_ask.requests || 0;
+          totals.chat_ask.generations += u.chat_ask.generations || 0;
+          totals.chat_ask.acceptances += u.chat_ask.acceptances || 0;
+        }
+        if (u.chat_edit) {
+          totals.chat_edit.requests += u.chat_edit.requests || 0;
+          totals.chat_edit.generations += u.chat_edit.generations || 0;
+          totals.chat_edit.acceptances += u.chat_edit.acceptances || 0;
+        }
+        if (u.agent) {
+          totals.agent.requests += u.agent.requests || 0;
+          totals.agent.generations += u.agent.generations || 0;
+          totals.agent.acceptances += u.agent.acceptances || 0;
+        }
+        if (u.agent_auto) {
+          totals.agent_auto.requests += u.agent_auto.requests || 0;
+          totals.agent_auto.generations += u.agent_auto.generations || 0;
+          totals.agent_auto.acceptances += u.agent_auto.acceptances || 0;
+        }
+        if (u.other) {
+          totals.other.requests += u.other.requests || 0;
+          totals.other.generations += u.other.generations || 0;
+          totals.other.acceptances += u.other.acceptances || 0;
+        }
+        // Fallback if no feature breakdown was provided
+        if (!u.completion && !u.chat_ask && !u.chat_edit && !u.agent && !u.other) {
+          totals.other.generations += u.suggestions || 0;
+          totals.other.acceptances += u.acceptances || 0;
+        }
+      });
+
+      const leaders = Array.from(users.values())
+        .sort((a, b) => (b.suggestions || 0) - (a.suggestions || 0))
+        .slice(0, 6);
+
+      const acceptanceRate = totals.suggestions > 0
+        ? `${((totals.acceptances / totals.suggestions) * 100).toFixed(1)}%`
+        : '–';
+      const completionRate = totals.completion.generations > 0
+        ? `${((totals.completion.acceptances / totals.completion.generations) * 100).toFixed(1)}%`
+        : '–';
+
+      return { totals, leaders, acceptanceRate, completionRate, map: users };
+    };
+
+    const applyMetrics = async ({ totals, acceptanceRate, rangeText, downloadsHtml, userAgg, dayTotals, rawSample }) => {
+      // Top-level KPIs
+      const netLoc = totals.loc.added - totals.loc.deleted;
+      const avgInteractionsPerUser = totals.dailyActiveAvg > 0 ? (totals.interactions / totals.dailyActiveAvg).toFixed(1) : '–';
+      
+      // Calculate max interactions per user and username from user aggregation data
+      let maxInteractionsPerUser = '–';
+      let maxInteractionsUsername = '–';
+      if (userAgg && userAgg.map) {
+        let maxVal = 0;
+        let maxUser = null;
+        userAgg.map.forEach((u, login) => {
+          if ((u.interactions || 0) > maxVal) {
+            maxVal = u.interactions || 0;
+            maxUser = login;
+          }
+        });
+        if (maxVal > 0) {
+          maxInteractionsPerUser = maxVal.toString();
+          maxInteractionsUsername = maxUser || '–';
+        }
+      }
+      
+      // Calculate max daily users date and weekday from day totals
+      let maxDailyUsersDate = 'Peak single day';
+      if (dayTotals && dayTotals.length > 0) {
+        let maxDay = null;
+        let maxUsers = 0;
+        for (const day of dayTotals) {
+          if ((day.daily_active_users || 0) > maxUsers) {
+            maxUsers = day.daily_active_users || 0;
+            maxDay = day;
+          }
+        }
+        if (maxDay && maxDay.day) {
+          const dateObj = new Date(maxDay.day);
+          const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+          maxDailyUsersDate = `${maxDay.day} (${weekday})`;
+        }
+      }
+
+      avgDailyUsersEl.textContent = fmtNum(Math.round(totals.dailyActiveAvg)) || '–';
+      maxDailyUsersEl.textContent = fmtNum(totals.dailyActiveMax) || '–';
+      maxDailyUsersDateEl.textContent = maxDailyUsersDate;
+      avgInteractionsPerUserEl.textContent = avgInteractionsPerUser;
+      maxInteractionsPerUserEl.textContent = maxInteractionsPerUser;
+      maxInteractionsUserEl.textContent = maxInteractionsUsername !== '–' ? maxInteractionsUsername : 'Peak single user';
+
+      // Detail metrics
+      locAddedEl.textContent = fmtNum(totals.loc.added) || '–';
+      locDeletedEl.textContent = fmtNum(totals.loc.deleted) || '–';
+      locNetImpactEl.textContent = fmtNum(netLoc) || '–';
+
+      const compRate = totals.completion.generations > 0
+        ? `${((totals.completion.acceptances / totals.completion.generations) * 100).toFixed(1)}%`
+        : '–';
+      const chatAskRate = totals.chat_ask.generations > 0
+        ? `${((totals.chat_ask.acceptances / totals.chat_ask.generations) * 100).toFixed(1)}%`
+        : '–';
+      const chatEditRate = totals.chat_edit.generations > 0
+        ? `${((totals.chat_edit.acceptances / totals.chat_edit.generations) * 100).toFixed(1)}%`
+        : '–';
+      const agentAdoptionRate = totals.agent.generations > 0
+        ? `${((totals.agent.acceptances / totals.agent.generations) * 100).toFixed(1)}%`
+        : '–';
+
+      completionSugEl.textContent = fmtNum(totals.completion.generations) || '–';
+      completionAccEl.textContent = fmtNum(totals.completion.acceptances) || '–';
+      completionRateEl.textContent = compRate;
+      chatAskRequestsEl.textContent = fmtNum(totals.chat_ask.requests) || '–';
+      chatAskGenerationsEl.textContent = fmtNum(totals.chat_ask.generations) || '–';
+      chatAskAcceptancesEl.textContent = fmtNum(totals.chat_ask.acceptances) || '–';
+      chatAskRateEl.textContent = chatAskRate;
+      chatEditRequestsEl.textContent = fmtNum(totals.chat_edit.requests) || '–';
+      chatEditGenerationsEl.textContent = fmtNum(totals.chat_edit.generations) || '–';
+      chatEditAcceptancesEl.textContent = fmtNum(totals.chat_edit.acceptances) || '–';
+      chatEditRateEl.textContent = chatEditRate;
+      agentInvocationsEl.textContent = fmtNum(totals.agent.requests) || '–';
+      agentProposedEl.textContent = fmtNum(totals.agent.generations) || '–';
+      agentAppliedEl.textContent = fmtNum(totals.agent.acceptances) || '–';
+      agentAutoProposedEl.textContent = fmtNum(totals.agent_auto.generations) || '–';
+
+      rangeEl.textContent = rangeText || 'Unknown window';
+      if (downloadsHtml) downloadsEl.innerHTML = downloadsHtml; else downloadsEl.textContent = 'No download links';
+
+      const ua = userAgg || { totals: { users: 0, interactions: 0, suggestions: 0, acceptances: 0, completion: { requests: 0, generations: 0, acceptances: 0 }, chat_ask: { requests: 0, generations: 0, acceptances: 0 }, chat_edit: { requests: 0, generations: 0, acceptances: 0 }, agent: { requests: 0, generations: 0, acceptances: 0 }, other: { requests: 0, generations: 0, acceptances: 0 } }, map: new Map() };
+      userSummaryEl.textContent = `Users: ${fmtNum(ua.totals.users)} — Interactions: ${fmtNum(ua.totals.interactions)}, Suggestions: ${fmtNum(ua.totals.suggestions)}, Acceptances: ${fmtNum(ua.totals.acceptances)}`;
+
+      await chartReady;
+      renderPie(langChartEl, 'Languages', totals.languages);
+      renderPie(ideChartEl, 'IDEs', totals.ides);
+      renderPie(featureChartEl, 'Features', totals.features);
+      renderPie(modelChartEl, 'Models', totals.models);
+      const totalSuggestions = ua && ua.map ? Array.from(ua.map.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userChartLabel.textContent = `Users (suggestions) — ${fmtNum(totalSuggestions)}`;
+      renderPie(userChartEl, `Users (suggestions) — ${fmtNum(totalSuggestions)}`, ua ? ua.map : new Map());
+      const userCompletionMap = ua ? buildUserMap(ua.map, (u) => u.completion?.generations) : new Map();
+      const userCompletionTotal = userCompletionMap.size > 0 ? Array.from(userCompletionMap.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userCompletionChartLabel.textContent = `Code Completions — ${fmtNum(userCompletionTotal)}`;
+      const userChatAskMap = ua ? buildUserMap(ua.map, (u) => u.chat_ask?.generations) : new Map();
+      const userChatAskTotal = userChatAskMap.size > 0 ? Array.from(userChatAskMap.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userChatAskChartLabel.textContent = `Chat — Ask Mode — ${fmtNum(userChatAskTotal)}`;
+      const userChatEditMap = ua ? buildUserMap(ua.map, (u) => u.chat_edit?.generations) : new Map();
+      const userChatEditTotal = userChatEditMap.size > 0 ? Array.from(userChatEditMap.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userChatEditChartLabel.textContent = `Chat — Edit Mode — ${fmtNum(userChatEditTotal)}`;
+      const userAgentMap = ua ? buildUserMap(ua.map, (u) => u.agent_mode?.generations) : new Map();
+      const userAgentTotal = userAgentMap.size > 0 ? Array.from(userAgentMap.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userAgentChartLabel.textContent = `Chat — Agent Mode — ${fmtNum(userAgentTotal)}`;
+      const userAgentAutoMap = ua ? buildUserMap(ua.map, (u) => u.agent_auto?.generations) : new Map();
+      const userAgentAutoTotal = userAgentAutoMap.size > 0 ? Array.from(userAgentAutoMap.values()).reduce((sum, u) => sum + (u.suggestions || 0), 0) : 0;
+      userAgentAutoChartLabel.textContent = `Agent Autonomous Edits — ${fmtNum(userAgentAutoTotal)}`;
+      renderPie(userCompletionChartEl, `Code Completions — ${fmtNum(userCompletionTotal)}`, userCompletionMap);
+      renderPie(userChatAskChartEl, `Chat — Ask Mode — ${fmtNum(userChatAskTotal)}`, userChatAskMap);
+      renderPie(userChatEditChartEl, `Chat — Edit Mode — ${fmtNum(userChatEditTotal)}`, userChatEditMap);
+      renderPie(userAgentChartEl, `Chat — Agent Mode — ${fmtNum(userAgentTotal)}`, userAgentMap);
+      renderPie(userAgentAutoChartEl, `Agent Autonomous Edits — ${fmtNum(userAgentAutoTotal)}`, userAgentAutoMap);
+      renderLine(dailyActiveChartEl, 'Daily Active Users', dayTotals || []);
+      const agentAutoTrend = extractAgentAutoTrend(dayTotals || []);
+      renderAgentAutoLine(agentAutoChartEl, 'Agent Autonomous Edits — Proposed', agentAutoTrend);
+
+      rawEl.textContent = JSON.stringify(rawSample || {}, null, 2);
+    };
+
+
+
+    const charts = {};
+
+    const mapToChart = (map) => {
+      const entries = Array.from(map.entries()).map(([name, vals]) => ({ name, value: vals.suggestions || 0 }));
+      const filtered = entries.filter(e => e.value > 0);
+      const sorted = filtered.sort((a, b) => b.value - a.value);
+      return sorted.length ? sorted : [{ name: 'No data', value: 1 }];
+    };
+
+    const palette = ['#0ea5e9', '#0284c7', '#22c55e', '#a855f7', '#f97316', '#ef4444', '#14b8a6', '#eab308'];
+
+    const renderPie = (el, label, map) => {
+      const data = mapToChart(map);
+      const ctx = el.getContext('2d');
+      const existing = charts[el.id];
+      if (existing) existing.destroy();
+      charts[el.id] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: data.map(d => d.name),
+          datasets: [{
+            label,
+            data: data.map(d => d.value),
+            backgroundColor: data.map((_, i) => palette[i % palette.length]),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { boxWidth: 12 } },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtNum(ctx.raw)}` } }
+          }
+        }
+      });
+    };
+
+    const renderLine = (el, label, dayTotals) => {
+      const ctx = el.getContext('2d');
+      const existing = charts[el.id];
+      if (existing) existing.destroy();
+      const sorted = [...dayTotals].sort((a, b) => new Date(a.day) - new Date(b.day));
+      const data = sorted.map(d => ({ day: d.day, users: d.daily_active_users || 0 }));
+      charts[el.id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.day),
+          datasets: [{
+            label,
+            data: data.map(d => d.users),
+            borderColor: palette[0],
+            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+            fill: true,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtNum(ctx.raw)} users` } }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Day' } },
+            y: { title: { display: true, text: 'Active Users' }, beginAtZero: true }
+          }
+        }
+      });
+    };
+
+    const renderAgentAutoLine = (el, label, trendData) => {
+      const ctx = el.getContext('2d');
+      const existing = charts[el.id];
+      if (existing) existing.destroy();
+      charts[el.id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: trendData.map(d => d.day),
+          datasets: [{
+            label,
+            data: trendData.map(d => d.proposed),
+            borderColor: palette[4],
+            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            fill: true,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtNum(ctx.raw)} actions` } }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Day' } },
+            y: { title: { display: true, text: 'Actions Proposed' }, beginAtZero: true }
+          }
+        }
+      });
+    };
+
+    const displayInactiveUsers = (seats, activeUsers) => {
+      if (!seats || seats.length === 0) {
+        document.getElementById('inactiveUsersStatus').textContent = 'No seats data available';
+        return;
+      }
+      
+      const seatLogins = new Set(seats.map(s => s.assignee?.login).filter(Boolean));
+      const activeLogins = new Set(activeUsers);
+      const inactiveLogins = Array.from(seatLogins).filter(login => !activeLogins.has(login));
+      
+      const inactivePercent = seatLogins.size > 0 ? ((inactiveLogins.length / seatLogins.size) * 100).toFixed(0) : 0;
+      const statusMsg = `${inactiveLogins.length} inactive users out of ${seatLogins.size} seats (${inactivePercent}%)`;
+      document.getElementById('inactiveUsersStatus').textContent = statusMsg;
+      
+      const listEl = document.getElementById('inactiveUsersList');
+      listEl.innerHTML = '';
+      
+      inactiveLogins.sort().forEach(login => {
+        const seat = seats.find(s => s.assignee?.login === login);
+        const card = document.createElement('div');
+        card.style.cssText = 'background: var(--bg2); border-left: 2px solid var(--accent); padding: 8px; border-radius: var(--radius); font-size: 13px;';
+        const lastActivity = seat?.last_activity_at ? new Date(seat.last_activity_at).toLocaleDateString() : 'Never';
+        card.innerHTML = `
+          <div style="font-weight: 600; color: var(--accent);">${login}</div>
+          <div style="color: var(--muted); margin-top: 2px; font-size: 12px;">
+            <div>Assigned: ${new Date(seat?.created_at || '').toLocaleDateString()}</div>
+            <div>Last active: ${lastActivity}</div>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    };
+
+    const buildUserMap = (usersMap, pick) => {
+      const out = new Map();
+      usersMap.forEach((u, login) => {
+        const val = pick(u) || 0;
+        if (val > 0) out.set(login, { suggestions: val, acceptances: 0 });
+      });
+      return out;
+    };
+
+    const extractAgentAutoTrend = (dayTotals) => {
+      const trend = dayTotals.map(day => {
+        let proposed = 0;
+        if (Array.isArray(day.totals_by_feature)) {
+          const agentEdit = day.totals_by_feature.find(f => f.feature === 'agent_edit');
+          if (agentEdit) {
+            proposed = agentEdit.code_generation_activity_count || 0;
+          }
+        }
+        return { day: day.day, proposed };
+      });
+      return trend.sort((a, b) => new Date(a.day) - new Date(b.day));
+    };
+
+    const renderList = (el, items, formatter) => {
+      if (!items || !items.length) {
+        el.textContent = 'None';
+        return;
+      }
+      el.innerHTML = items.map(formatter).join('');
+    };
+
+    document.getElementById('load').addEventListener('click', async () => {
+      const org = document.getElementById('org').value.trim();
+      const token = document.getElementById('token').value.trim();
+      const windowMode = document.getElementById('window').value;
+      const day = document.getElementById('day').value.trim();
+      if (!org || !token) {
+        setError('Org and token are required');
+        return;
+      }
+      if (windowMode === 'day' && !day) {
+        setError('Provide day in YYYY-MM-DD for 1-day reports');
+        return;
+      }
+      setError('None');
+      setStatus('Loading...');
+      document.getElementById('orgName').textContent = org;
+      let userAgg = null;
+
+      try {
+        const [meta, userMeta] = await Promise.all([
+          fetchOrgReportMeta(org, token, windowMode, day),
+          fetchUsersReportMeta(org, token, windowMode, day).catch(() => null)
+        ]);
+
+        const links = meta.data?.download_links || [];
+        const firstLink = links[0];
+        if (!firstLink) throw new Error('No download_links returned');
+
+        // show URLs immediately so user can download manually if proxy fails
+        const orgLinksHtml = links.map((link, idx) => `<a href="${link}" target="_blank" rel="noreferrer">Download ${idx + 1}</a>`).join(' | ');
+        downloadsEl.innerHTML = orgLinksHtml;
+
+        let userLinksHtml = 'User report: none returned';
+        let userAggLinks = null;
+        if (userMeta && userMeta.data) {
+          const userLinks = userMeta.data.download_links || [];
+          userLinksHtml = userLinks.length
+            ? userLinks.map((link, idx) => `<a href="${link}" target="_blank" rel="noreferrer">Users ${idx + 1}</a>`).join(' | ')
+            : 'User report: none returned';
+          userAggLinks = userLinks;
+          userDownloadsEl.innerHTML = userLinksHtml;
+        } else {
+          userDownloadsEl.textContent = 'User report not available';
+        }
+
+        const report = await fetchReportPayload(firstLink);
+        const totals = aggregate(report);
+        const acceptanceRate = totals.suggestions > 0
+          ? `${((totals.acceptances / totals.suggestions) * 100).toFixed(1)}%`
+          : '–';
+
+        if (userAggLinks && userAggLinks[0]) {
+          try {
+            const userReport = await fetchReportPayload(userAggLinks[0]);
+            const records = normalizeUserRecords(userReport);
+            if (records.length === 0) {
+              userSummaryEl.textContent = 'User report parsed but empty';
+            } else {
+              userAgg = summarizeUsers(records);
+              userSummaryEl.textContent = `Users: ${fmtNum(userAgg.totals.users)} — Interactions: ${fmtNum(userAgg.totals.interactions)}, Suggestions: ${fmtNum(userAgg.totals.suggestions)}, Acceptances: ${fmtNum(userAgg.totals.acceptances)}`;
+            }
+          } catch (e) {
+            console.error(e);
+            userSummaryEl.textContent = `User report download/parse failed: ${e?.message || e}`;
+          }
+        }
+
+        const rangeText = meta.data?.report_start_day && meta.data?.report_end_day
+          ? `Report window: ${meta.data.report_start_day} → ${meta.data.report_end_day}`
+          : (meta.data?.report_day ? `Report window: ${meta.data.report_day}` : 'Report window: Unknown');
+
+        await applyMetrics({
+          totals,
+          acceptanceRate,
+          rangeText,
+          downloadsHtml: orgLinksHtml,
+          userAgg,
+          dayTotals: report.day_totals || [],
+          rawSample: report.day_totals ? { report_start_day: report.report_start_day, report_end_day: report.report_end_day, day_totals: report.day_totals.slice(0, 3) } : report
+        });
+
+        // Fetch and display inactive users
+        try {
+          const seats = await fetchSeatsWithPagination(org, token);
+          const activeUsers = userAgg?.map ? Array.from(userAgg.map.keys()) : [];
+          displayInactiveUsers(seats, activeUsers);
+        } catch (err) {
+          console.error('Failed to fetch seats:', err);
+          document.getElementById('inactiveUsersStatus').textContent = `Failed to load seats data: ${err.message}`;
+        }
+
+        setStatus('Loaded');
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setStatus('Error');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('load').click();
+      }
+    });
+
+    uploadToggleEl.addEventListener('click', () => {
+      uploadPanelEl.style.display = uploadPanelEl.style.display === 'none' ? 'block' : 'none';
+    });
+
+    const readFileAsText = (file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+
+    loadUploadsEl.addEventListener('click', async () => {
+      const orgFile = orgFileEl.files?.[0];
+      if (!orgFile) {
+        setError('Org report file is required');
+        return;
+      }
+      setError('None');
+      setStatus('Loading uploaded files...');
+      try {
+        const orgText = await readFileAsText(orgFile);
+        const orgReport = parseReportText(orgText);
+        const totals = aggregate(orgReport);
+        const acceptanceRate = totals.suggestions > 0
+          ? `${((totals.acceptances / totals.suggestions) * 100).toFixed(1)}%`
+          : '–';
+
+        let userAgg = null;
+        if (userFileEl.files?.[0]) {
+          try {
+            const userText = await readFileAsText(userFileEl.files[0]);
+            const userReport = parseReportText(userText);
+            const records = normalizeUserRecords(userReport);
+            userAgg = summarizeUsers(records);
+          } catch (e) {
+            console.error(e);
+            userSummaryEl.textContent = `User upload parse failed: ${e?.message || e}`;
+          }
+        }
+
+        const rangeText = orgReport?.report_start_day && orgReport?.report_end_day
+          ? `Report window: ${orgReport.report_start_day} → ${orgReport.report_end_day}`
+          : 'Report window: Uploaded';
+
+        await applyMetrics({
+          totals,
+          acceptanceRate,
+          rangeText,
+          downloadsHtml: 'Uploaded files',
+          userAgg,
+          dayTotals: orgReport.day_totals || [],
+          rawSample: orgReport.day_totals ? { report_start_day: orgReport.report_start_day, report_end_day: orgReport.report_end_day, day_totals: orgReport.day_totals.slice(0, 3) } : orgReport
+        });
+
+        // Clear inactive users display for uploaded files (no API access to seats)
+        document.getElementById('inactiveUsersStatus').textContent = 'Seats data not available for uploaded reports';
+        document.getElementById('inactiveUsersList').innerHTML = '';
+
+        userDownloadsEl.textContent = userAgg ? 'User upload loaded' : 'User upload not provided';
+        downloadsEl.textContent = 'Uploaded files';
+        setStatus('Loaded uploaded files');
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setStatus('Error');
+      }
+    });
+
+    if (document.getElementById('loadLocal')) {
+      document.getElementById('loadLocal').addEventListener('click', async () => {
+        const windowMode = document.getElementById('window').value;
+        const day = document.getElementById('day').value.trim();
+        if (windowMode === 'day' && !day) {
+          setError('Provide day in YYYY-MM-DD for 1-day reports');
+          return;
+        }
+
+        setError('None');
+        setStatus('Loading local reports...');
+        document.getElementById('orgName').textContent = 'local-sample';
+
+        const qs = (windowMode === 'day' && day) ? `?day=${encodeURIComponent(day)}` : '';
+
+        try {
+          const [orgReport, userRows, kpis] = await Promise.all([
+            fetch(`/api/local/org-report${qs}`).then(r => r.json()),
+            fetch(`/api/local/users-report${qs}`).then(r => r.json()),
+            fetch(`/api/local/kpis${qs}`).then(r => r.json()),
+          ]);
+
+        if (orgReport?.error) throw new Error(orgReport.error);
+        if (Array.isArray(userRows) && userRows[0]?.error) throw new Error(userRows[0].error);
+        if (kpis?.error) throw new Error(kpis.error);
+
+        const totals = aggregate(orgReport);
+        const acceptanceRate = totals.suggestions > 0
+          ? `${((totals.acceptances / totals.suggestions) * 100).toFixed(1)}%`
+          : '–';
+
+        const userAgg = summarizeUsers(Array.isArray(userRows) ? userRows : []);
+
+        const rangeText = orgReport?.report_start_day && orgReport?.report_end_day
+          ? `Report window: ${orgReport.report_start_day} → ${orgReport.report_end_day}${day ? ` (filtered: ${day})` : ''}`
+          : `Report window: local${day ? ` (filtered: ${day})` : ''}`;
+
+        await applyMetrics({
+          totals,
+          acceptanceRate,
+          rangeText,
+          downloadsHtml: 'Local files',
+          userAgg,
+          dayTotals: orgReport.day_totals || [],
+          rawSample: { localKpis: kpis, orgSample: { report_start_day: orgReport.report_start_day, report_end_day: orgReport.report_end_day, day_totals: (orgReport.day_totals || []).slice(0, 2) }, usersSample: (userRows || []).slice(0, 2) }
+        });
+
+        userDownloadsEl.textContent = 'Local files';
+        setStatus('Loaded local reports');
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setStatus('Error');
+      }
+      });
+    }
+  </script>
+</body>
+</html>
