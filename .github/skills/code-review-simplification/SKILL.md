@@ -1,7 +1,6 @@
 ---
-name: code-simplifier
-description: "Recommends simplifications for clarity and maintainability that preserve behavior. Run only after the change has passed the other reviews."
-tools: ["read", "search"]
+name: code-review-simplification
+description: "Use at the end of a pull request review, only when no Critical issue was found. Recommends simplifications for clarity and maintainability that preserve behavior."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->

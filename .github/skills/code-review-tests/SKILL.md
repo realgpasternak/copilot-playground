@@ -1,7 +1,6 @@
 ---
-name: pr-test-analyzer
-description: "Reviews the behavioral test coverage of a pull request, identifies critical gaps and rates their severity from 1 to 10."
-tools: ["read", "search"]
+name: code-review-tests
+description: "Use when reviewing a pull request that adds or changes tests. Reviews behavioral test coverage, identifies critical gaps and rates their severity from 1 to 10."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->
