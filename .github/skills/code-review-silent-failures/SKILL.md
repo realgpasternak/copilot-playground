@@ -1,7 +1,6 @@
 ---
-name: silent-failure-hunter
-description: "Finds silent failures in changed code: swallowed errors, broad catch blocks, missing error logging and unjustified fallback behavior."
-tools: ["read", "search"]
+name: code-review-silent-failures
+description: "Use when reviewing a pull request that changes error handling, catch blocks or fallback behavior. Finds silent failures, swallowed errors, missing error logging and unjustified fallbacks."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->

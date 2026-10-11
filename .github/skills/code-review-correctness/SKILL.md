@@ -1,7 +1,6 @@
 ---
-name: code-reviewer
-description: "Reviews a pull request for bugs, security issues and violations of the project guidelines. Reports only high-confidence findings, grouped as Critical and Important."
-tools: ["read", "search"]
+name: code-review-correctness
+description: "Use when reviewing a pull request. Checks the changed code for bugs, security issues and violations of the repository guidelines, and reports only high-confidence findings grouped as Critical and Important."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->

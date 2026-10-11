@@ -1,7 +1,6 @@
 ---
-name: type-design-analyzer
-description: "Analyzes the design of new or changed types for encapsulation and invariant expression, and rates the design quality."
-tools: ["read", "search"]
+name: code-review-types
+description: "Use when reviewing a pull request that adds or changes types, classes or schemas. Analyzes encapsulation and invariant expression and rates the type design."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->

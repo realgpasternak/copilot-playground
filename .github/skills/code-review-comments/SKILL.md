@@ -1,7 +1,6 @@
 ---
-name: comment-analyzer
-description: "Checks comments, docstrings and documentation in a change for accuracy, completeness and long-term maintainability (comment rot)."
-tools: ["read", "search"]
+name: code-review-comments
+description: "Use when reviewing a pull request that adds or changes comments, docstrings or documentation. Checks them for accuracy, completeness and comment rot."
 ---
 
 <!-- Adapted from Anthropic's pr-review-toolkit plugin (Apache-2.0). Review mode: report findings only, never modify files. -->

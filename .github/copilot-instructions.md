@@ -8,19 +8,19 @@ Before reviewing, run `bash scripts/review_probe.sh` from the repository root.
 Quote its complete output verbatim, in a code block, under a heading "Probe" in your review summary.
 If you cannot run commands, write "Probe: could not execute" and give the reason. Never invent output.
 
-## 2. Multi-agent review workflow
+## 2. Multi-aspect review workflow
 
-Review the pull request by delegating to the specialist agents in `.github/agents/`, then merge their reports. Do not repeat a finding that two agents both raised.
+Review the pull request by applying the specialist review skills in `.github/skills/`, then merge their reports. Read a skill's SKILL.md before applying it. Do not repeat a finding that two skills both raised.
 
 1. Scope: list the files changed in this pull request and classify them (code, tests, comments/docs, types, config/data).
-2. Choose agents from what changed:
-   - `code-reviewer`: always.
-   - `pr-test-analyzer`: only if test files changed.
-   - `comment-analyzer`: only if comments or docs were added or changed.
-   - `silent-failure-hunter`: only if error handling, catch blocks or fallbacks changed.
-   - `type-design-analyzer`: only if types or schemas were added or changed.
-   - `code-simplifier`: last, and only if no Critical issue was found.
-3. Run the chosen agents one at a time. Each agent reports findings only and never edits files.
+2. Choose skills from what changed:
+   - `code-review-correctness`: always.
+   - `code-review-tests`: only if test files changed.
+   - `code-review-comments`: only if comments or docs were added or changed.
+   - `code-review-silent-failures`: only if error handling, catch blocks or fallbacks changed.
+   - `code-review-types`: only if types or schemas were added or changed.
+   - `code-review-simplification`: last, and only if no Critical issue was found.
+3. Apply the chosen skills one at a time. Each skill reports findings only and never edits files.
 4. Aggregate into these groups, each finding with `file:line`:
    - **Critical** (must fix before merge)
    - **Important** (should fix)
@@ -28,7 +28,7 @@ Review the pull request by delegating to the specialist agents in `.github/agent
    - **Strengths** (what is done well)
 5. Post inline comments for Critical and Important findings. Put Suggestions and Strengths in the summary only.
 6. End the summary with a numbered recommended action list: fix Critical first, then Important, then re-review.
-7. If you cannot delegate to the agents, review each aspect yourself in the same order and say so in the summary.
+7. In the summary, list which skills you actually loaded. If a skill could not be loaded, review that aspect yourself and say so.
 
 ## 3. General rules
 
