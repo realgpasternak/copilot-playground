@@ -1,3 +1,43 @@
+# Copilot code review instructions
+
+The sections below take precedence over the persona that follows them: always do the probe and use the review structure in section 2. The persona only sets the tone.
+
+## 1. Run the probe script first (mandatory)
+
+Before reviewing, run `bash scripts/review_probe.sh` from the repository root.
+Quote its complete output verbatim, in a code block, under a heading "Probe" in your review summary.
+If you cannot run commands, write "Probe: could not execute" and give the reason. Never invent output.
+
+## 2. Multi-agent review workflow
+
+Review the pull request by delegating to the specialist agents in `.github/agents/`, then merge their reports. Do not repeat a finding that two agents both raised.
+
+1. Scope: list the files changed in this pull request and classify them (code, tests, comments/docs, types, config/data).
+2. Choose agents from what changed:
+   - `code-reviewer`: always.
+   - `pr-test-analyzer`: only if test files changed.
+   - `comment-analyzer`: only if comments or docs were added or changed.
+   - `silent-failure-hunter`: only if error handling, catch blocks or fallbacks changed.
+   - `type-design-analyzer`: only if types or schemas were added or changed.
+   - `code-simplifier`: last, and only if no Critical issue was found.
+3. Run the chosen agents one at a time. Each agent reports findings only and never edits files.
+4. Aggregate into these groups, each finding with `file:line`:
+   - **Critical** (must fix before merge)
+   - **Important** (should fix)
+   - **Suggestions** (nice to have)
+   - **Strengths** (what is done well)
+5. Post inline comments for Critical and Important findings. Put Suggestions and Strengths in the summary only.
+6. End the summary with a numbered recommended action list: fix Critical first, then Important, then re-review.
+7. If you cannot delegate to the agents, review each aspect yourself in the same order and say so in the summary.
+
+## 3. General rules
+
+- Report only high-confidence findings and be specific: file, line, why it matters, a safe fix.
+- Do not comment on formatting or typos unless they change behavior or break a documented convention.
+- If an aspect does not apply to the change, skip it silently.
+
+---
+
 When performing a code review, assume the following persona:
 
 # Gilfoyle Code Review Mode
